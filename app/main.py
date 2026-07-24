@@ -3,17 +3,28 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import Base, engine
-from app.models import User
-from app.routers import auth_router
+
+# Import all models
+from app.models.user import User
+from app.models.social_account import SocialAccount
+from app.models.campaign import Campaign
+from app.models.post import Post
+from app.models.analytics import Analytics
+from app.routers import social_account_router
+
+# Import routers
+from app.routers import auth_router, campaign_router
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
+# Create FastAPI app
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version="1.0.0",
     debug=True
 )
+
 # CORS Configuration
 app.add_middleware(
     CORSMiddleware,
@@ -25,6 +36,8 @@ app.add_middleware(
 
 # Register Routers
 app.include_router(auth_router)
+app.include_router(campaign_router)
+app.include_router(social_account_router)
 
 
 @app.get("/")

@@ -4,3 +4,4 @@ from .user import (
     UserUpdate,
     UserResponse,
 )
+from .campaign import CampaignCreate, CampaignUpdate, CampaignResponse
