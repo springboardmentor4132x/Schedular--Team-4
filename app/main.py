@@ -15,6 +15,18 @@ from app.routers import social_account_router
 # Import routers
 from app.routers import auth_router, campaign_router
 
+from app.routers import post_router
+
+from app.routers import (
+    auth_router,
+    campaign_router,
+    social_account_router,
+    post_router,
+    analytics_router
+)
+from app.models.audience import Audience
+from app.routers import audience_router
+
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
@@ -35,10 +47,13 @@ app.add_middleware(
 )
 
 # Register Routers
+
 app.include_router(auth_router)
 app.include_router(campaign_router)
 app.include_router(social_account_router)
-
+app.include_router(post_router)
+app.include_router(analytics_router)
+app.include_router(audience_router)
 
 @app.get("/")
 def root():
@@ -61,3 +76,4 @@ def handshake():
         "success": True,
         "message": "Backend connected successfully!"
     }
+

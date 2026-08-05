@@ -28,14 +28,26 @@ class Post(Base):
 
     media_url = Column(String(500), nullable=True)
 
+    # NEW
+    content_type = Column(
+        String(30),
+        default="Text"
+    )
+
     scheduled_time = Column(
         DateTime(timezone=True),
         nullable=False
     )
 
+    # NEW
+    timezone = Column(
+        String(50),
+        default="Asia/Kolkata"
+    )
+
     status = Column(
         String(30),
-        default="Scheduled"
+        default="Draft"
     )
 
     created_at = Column(
@@ -43,6 +55,18 @@ class Post(Base):
         server_default=func.now()
     )
 
-    campaign = relationship("Campaign")
+    # NEW
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now()
+    )
 
+    analytics = relationship(
+    "Analytics",
+    back_populates="post",
+    uselist=False
+    )
+
+    campaign = relationship("Campaign")
     social_account = relationship("SocialAccount")
