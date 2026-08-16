@@ -1,6 +1,7 @@
 import pytest
 import json
 from datetime import datetime, timedelta
+from unittest.mock import patch
 from fastapi import status
 from app.database.models import Post, PublishingLog, SocialAccount
 from app.core.scheduler import publish_pending_posts
@@ -56,14 +57,21 @@ def test_publishing_loop_success_and_failure_retry(client, db):
 
     # 5. Execute the background worker publisher task manually
     import asyncio
-    asyncio.run(publish_pending_posts(db))
+    with patch("app.social.providers.linkedin.LinkedInProvider.publish_post") as mock_publish:
+        mock_publish.return_value = {
+            "id": "urn:li:share:12345",
+            "platform": "linkedin",
+            "status": "published",
+            "raw_response": {}
+        }
+        asyncio.run(publish_pending_posts(db))
 
     # 6. Verify post status updated to published and logs recorded
     db.refresh(db_post)
     assert db_post.status == "published"
     logs = db.query(PublishingLog).filter(PublishingLog.post_id == post_id).all()
     assert len(logs) == 1
-    assert logs[0].status == "success"
+    assert logs[0].status == "published"
     assert logs[0].platform == "linkedin"
 
     # 7. Schedule a second post in the future
@@ -111,11 +119,18 @@ def test_publishing_loop_success_and_failure_retry(client, db):
     db.commit()
 
     # 9. Attempt manual retry route again (should now succeed)
-    retry_resp_2 = client.post(f"/api/v1/posts/{post_id_2}/retry", headers=owner_headers)
+    with patch("app.social.providers.linkedin.LinkedInProvider.publish_post") as mock_publish:
+        mock_publish.return_value = {
+            "id": "urn:li:share:12345",
+            "platform": "linkedin",
+            "status": "published",
+            "raw_response": {}
+        }
+        retry_resp_2 = client.post(f"/api/v1/posts/{post_id_2}/retry", headers=owner_headers)
     assert retry_resp_2.status_code == status.HTTP_200_OK
     assert retry_resp_2.json()["status"] == "published"
 
     # Assert third log is success
     logs_final = db.query(PublishingLog).filter(PublishingLog.post_id == post_id_2).order_by(PublishingLog.published_at.desc()).all()
     assert len(logs_final) == 3
-    assert logs_final[0].status == "success"
+    assert logs_final[0].status == "published"

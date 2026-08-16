@@ -12,16 +12,20 @@ const Analytics = () => {
   const [error, setError] = useState('');
   const [selectedMetric, setSelectedMetric] = useState('impressions'); // impressions, clicks, engagements
   const [csvDownloading, setCsvDownloading] = useState(false);
+  const [filterPlatform, setFilterPlatform] = useState('');
 
   const getActiveTeamId = useCallback(() => {
     return localStorage.getItem('socialpilot_active_team_id') || '';
   }, []);
 
-  const loadAnalytics = useCallback(async (activeId) => {
+  const loadAnalytics = useCallback(async (activeId, platformFilter = '') => {
     const currentId = activeId || teamId;
     setLoading(true);
     try {
-      const url = currentId ? `/analytics/dashboard?team_id=${currentId}` : '/analytics/dashboard';
+      let url = currentId ? `/analytics/dashboard?team_id=${currentId}` : '/analytics/dashboard';
+      if (platformFilter) {
+        url += `&platform=${platformFilter}`;
+      }
       const response = await api.get(url);
       const payload = response.data?.data || response.data;
       setData(payload);
@@ -37,7 +41,7 @@ const Analytics = () => {
     const id = getActiveTeamId();
     if (id) {
       setTeamId(id);
-      loadAnalytics(id);
+      loadAnalytics(id, filterPlatform);
     } else {
       // Auto-fetch active user teams list if active team ID is missing from localStorage
       api.get('/teams').then(res => {
@@ -46,21 +50,21 @@ const Analytics = () => {
           const firstId = teamsList[0].id;
           localStorage.setItem('socialpilot_active_team_id', firstId);
           setTeamId(firstId);
-          loadAnalytics(firstId);
+          loadAnalytics(firstId, filterPlatform);
         } else {
-          loadAnalytics('');
+          loadAnalytics('', filterPlatform);
         }
       }).catch(() => {
-        loadAnalytics('');
+        loadAnalytics('', filterPlatform);
       });
     }
-  }, [getActiveTeamId, loadAnalytics]);
+  }, [getActiveTeamId, loadAnalytics, filterPlatform]);
 
   // Export CSV helper
   const handleExportCSV = async () => {
     setCsvDownloading(true);
     try {
-      const url = teamId ? `/analytics/export-csv?team_id=${teamId}` : '/analytics/export-csv';
+      let url = teamId ? `/analytics/export-csv?team_id=${teamId}` : '/analytics/export-csv';
       const response = await api.get(url, { responseType: 'blob' });
       const blob = new Blob([response.data], { type: 'text/csv' });
       const downloadUrl = window.URL.createObjectURL(blob);
@@ -104,12 +108,12 @@ const Analytics = () => {
       { date: 'Sat', impressions: 18200, clicks: 1250, engagements: 2100 },
       { date: 'Sun', impressions: 21500, clicks: 1570, engagements: 2550 }
     ],
-    platform_breakdown: [
-      { platform: 'facebook', name: 'Facebook Page', followers: 12400, share_pct: 38 },
-      { platform: 'instagram', name: 'Instagram Business', followers: 11200, share_pct: 34 },
-      { platform: 'linkedin', name: 'LinkedIn Company', followers: 5800, share_pct: 18 },
-      { platform: 'twitter', name: 'X / Twitter Profile', followers: 3000, share_pct: 10 }
-    ],
+    platform_breakdown: {
+      facebook: { impressions: 12400, clicks: 920, engagements: 1600, posts_count: 38 },
+      instagram: { impressions: 11200, clicks: 1850, engagements: 2900, posts_count: 34 },
+      linkedin: { impressions: 5800, clicks: 1410, engagements: 2350, posts_count: 18 },
+      twitter: { impressions: 3000, clicks: 2350, engagements: 3600, posts_count: 10 }
+    },
     top_performing_posts: [
       {
         id: '1',
@@ -141,9 +145,32 @@ const Analytics = () => {
     ]
   };
 
-  const activeData = (data && data.summary && data.summary.total_impressions > 0) ? data : defaultData;
+  const activeData = (data && data.summary && (typeof data.summary.total_impressions === 'number' || typeof data.summary.total_impressions === 'string')) ? data : defaultData;
   const summary = activeData.summary || defaultData.summary;
   const trends = (activeData.timeline_trends && activeData.timeline_trends.length > 0) ? activeData.timeline_trends : defaultData.timeline_trends;
+
+  const connectedPlatforms = data && data.platform_breakdown 
+    ? Object.keys(data.platform_breakdown) 
+    : ['facebook', 'instagram', 'linkedin', 'twitter'];
+
+  const formatMetricValue = (val) => {
+    if (val === "Not available for Facebook") {
+      return "Not available for Facebook";
+    }
+    return typeof val === 'number' ? val.toLocaleString() : (val || 0);
+  };
+
+  const getValueFontSize = (val) => {
+    return val === "Not available for Facebook" ? "14px" : "1.8rem";
+  };
+
+  const getValueColor = (val) => {
+    return val === "Not available for Facebook" ? "var(--text-muted)" : "var(--text-primary)";
+  };
+
+  const averageCtrValue = typeof summary.total_impressions === 'number' && typeof summary.total_clicks === 'number' && summary.total_impressions > 0
+    ? ((summary.total_clicks / summary.total_impressions) * 100).toFixed(2) + "%"
+    : (summary.total_impressions === "Not available for Facebook" ? "Not available for Facebook" : "0.0%");
 
   // CUSTOM SVG LINE CHART RENDERING LOGIC
   const svgWidth = 550;
@@ -152,12 +179,12 @@ const Analytics = () => {
   const paddingY = 25;
   
   // Find maximum values for scaling
-  const maxVal = Math.max(...trends.map(t => t[selectedMetric] || 0)) || 100;
+  const maxVal = Math.max(...trends.map(t => typeof t[selectedMetric] === 'number' ? t[selectedMetric] : 0)) || 100;
   const scaleMax = Math.ceil(maxVal * 1.15 / 100) * 100; // round up to nice grid height
   
   // Generate (x, y) coordinates for our data points
   const points = trends.map((day, idx) => {
-    const val = day[selectedMetric] || 0;
+    const val = typeof day[selectedMetric] === 'number' ? day[selectedMetric] : 0;
     const x = paddingX + (idx * (svgWidth - 2 * paddingX) / Math.max(1, trends.length - 1));
     const y = svgHeight - paddingY - ((val / scaleMax) * (svgHeight - 2 * paddingY));
     return { x, y, val, date: day.date };
@@ -186,6 +213,34 @@ const Analytics = () => {
         </button>
       </div>
 
+      {/* Platform Filter Dropdown */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
+        <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-secondary)' }}>Platform Filter:</span>
+        <select
+          value={filterPlatform}
+          onChange={(e) => setFilterPlatform(e.target.value)}
+          style={{
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '8px',
+            color: 'var(--text-primary)',
+            padding: '8px 14px',
+            fontSize: '0.88rem',
+            fontWeight: '600',
+            cursor: 'pointer',
+            outline: 'none',
+            minWidth: '160px'
+          }}
+        >
+          <option value="">All Platforms</option>
+          {connectedPlatforms.map(plat => (
+            <option key={plat} value={plat} style={{ background: '#1e1b4b', color: '#ffffff' }}>
+              {plat.charAt(0).toUpperCase() + plat.slice(1)}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {/* Summary Scorecards Grid */}
       <div style={metricsGridStyle}>
         <div style={scorecardStyle('var(--primary-glow)')} className="glass-panel">
@@ -193,7 +248,9 @@ const Analytics = () => {
             <FiEye size={20} style={{ color: 'var(--primary)' }} />
             <span style={scorecardLabelStyle}>Total Impressions</span>
           </div>
-          <span style={scorecardValueStyle}>{(summary.total_impressions || 0).toLocaleString()}</span>
+          <span style={{ ...scorecardValueStyle, fontSize: getValueFontSize(summary.total_impressions), color: getValueColor(summary.total_impressions) }}>
+            {formatMetricValue(summary.total_impressions)}
+          </span>
           <span style={scorecardFootnote}>Total accounts reached</span>
         </div>
 
@@ -202,7 +259,9 @@ const Analytics = () => {
             <FiMousePointer size={20} style={{ color: 'var(--accent)' }} />
             <span style={scorecardLabelStyle}>Total Clicks</span>
           </div>
-          <span style={scorecardValueStyle}>{(summary.total_clicks || 0).toLocaleString()}</span>
+          <span style={{ ...scorecardValueStyle, fontSize: getValueFontSize(summary.total_clicks), color: getValueColor(summary.total_clicks) }}>
+            {formatMetricValue(summary.total_clicks)}
+          </span>
           <span style={scorecardFootnote}>Link clicks and profiles opened</span>
         </div>
 
@@ -211,7 +270,9 @@ const Analytics = () => {
             <FiThumbsUp size={20} style={{ color: 'var(--secondary)' }} />
             <span style={scorecardLabelStyle}>Engagements</span>
           </div>
-          <span style={scorecardValueStyle}>{(summary.total_engagements || 0).toLocaleString()}</span>
+          <span style={{ ...scorecardValueStyle, fontSize: getValueFontSize(summary.total_engagements), color: getValueColor(summary.total_engagements) }}>
+            {formatMetricValue(summary.total_engagements)}
+          </span>
           <span style={scorecardFootnote}>Likes, comments, and shares</span>
         </div>
 
@@ -220,7 +281,9 @@ const Analytics = () => {
             <FiTrendingUp size={20} style={{ color: 'var(--success)' }} />
             <span style={scorecardLabelStyle}>Average CTR</span>
           </div>
-          <span style={scorecardValueStyle}>{summary.average_ctr || 0.0}%</span>
+          <span style={{ ...scorecardValueStyle, fontSize: getValueFontSize(averageCtrValue), color: getValueColor(averageCtrValue) }}>
+            {averageCtrValue}
+          </span>
           <span style={scorecardFootnote}>Overall CTR engagement rate</span>
         </div>
       </div>
@@ -259,63 +322,70 @@ const Analytics = () => {
           </div>
 
           <div style={svgChartWrapperStyle}>
-            {/* SVG Elements drawing custom lines */}
-            <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} width="100%" height="100%">
-              {/* Gradients declarations */}
-              <defs>
-                <linearGradient id="chartAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={selectedMetric === 'impressions' ? 'var(--primary)' : selectedMetric === 'clicks' ? 'var(--accent)' : 'var(--secondary)'} stopOpacity="0.25" />
-                  <stop offset="100%" stopColor="transparent" stopOpacity="0" />
-                </linearGradient>
-              </defs>
+            {summary[selectedMetric] === "Not available for Facebook" ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '220px', color: 'var(--text-muted)', fontSize: '14px', gap: '8px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '10px', border: '1px dashed var(--border-color)' }}>
+                <FiAlertCircle size={28} style={{ color: 'var(--accent)' }} />
+                <span>Not available for Facebook</span>
+              </div>
+            ) : (
+              /* SVG Elements drawing custom lines */
+              <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} width="100%" height="100%">
+                {/* Gradients declarations */}
+                <defs>
+                  <linearGradient id="chartAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={selectedMetric === 'impressions' ? 'var(--primary)' : selectedMetric === 'clicks' ? 'var(--accent)' : 'var(--secondary)'} stopOpacity="0.25" />
+                    <stop offset="100%" stopColor="transparent" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
 
-              {/* Grid Lines */}
-              <line x1={paddingX} y1={paddingY} x2={svgWidth - paddingX} y2={paddingY} stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-              <line x1={paddingX} y1={(svgHeight - 2 * paddingY) / 2 + paddingY} x2={svgWidth - paddingX} y2={(svgHeight - 2 * paddingY) / 2 + paddingY} stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-              <line x1={paddingX} y1={svgHeight - paddingY} x2={svgWidth - paddingX} y2={svgHeight - paddingY} stroke="rgba(255,255,255,0.08)" strokeWidth="1.5" />
+                {/* Grid Lines */}
+                <line x1={paddingX} y1={paddingY} x2={svgWidth - paddingX} y2={paddingY} stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+                <line x1={paddingX} y1={(svgHeight - 2 * paddingY) / 2 + paddingY} x2={svgWidth - paddingX} y2={(svgHeight - 2 * paddingY) / 2 + paddingY} stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+                <line x1={paddingX} y1={svgHeight - paddingY} x2={svgWidth - paddingX} y2={svgHeight - paddingY} stroke="rgba(255,255,255,0.08)" strokeWidth="1.5" />
 
-              {/* Y Axis Grid values */}
-              <text x={paddingX - 10} y={paddingY + 4} fill="var(--text-muted)" fontSize="9" textAnchor="end">{scaleMax}</text>
-              <text x={paddingX - 10} y={(svgHeight - 2 * paddingY) / 2 + paddingY + 4} fill="var(--text-muted)" fontSize="9" textAnchor="end">{Math.round(scaleMax / 2)}</text>
-              <text x={paddingX - 10} y={svgHeight - paddingY + 4} fill="var(--text-muted)" fontSize="9" textAnchor="end">0</text>
+                {/* Y Axis Grid values */}
+                <text x={paddingX - 10} y={paddingY + 4} fill="var(--text-muted)" fontSize="9" textAnchor="end">{scaleMax}</text>
+                <text x={paddingX - 10} y={(svgHeight - 2 * paddingY) / 2 + paddingY + 4} fill="var(--text-muted)" fontSize="9" textAnchor="end">{Math.round(scaleMax / 2)}</text>
+                <text x={paddingX - 10} y={svgHeight - paddingY + 4} fill="var(--text-muted)" fontSize="9" textAnchor="end">0</text>
 
-              {/* Shaded Area fill path */}
-              {areaD && (
-                <path d={areaD} fill="url(#chartAreaGradient)" className="chart-area-entrance" />
-              )}
+                {/* Shaded Area fill path */}
+                {areaD && (
+                  <path d={areaD} fill="url(#chartAreaGradient)" className="chart-area-entrance" />
+                )}
 
-              {/* Line Stroke path */}
-              {pathD && (
-                <path 
-                  d={pathD} 
-                  fill="none" 
-                  stroke={selectedMetric === 'impressions' ? 'var(--primary)' : selectedMetric === 'clicks' ? 'var(--accent)' : 'var(--secondary)'} 
-                  strokeWidth="2.5" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round"
-                  className="chart-line-entrance"
-                />
-              )}
+                {/* Line Stroke path */}
+                {pathD && (
+                  <path 
+                    d={pathD} 
+                    fill="none" 
+                    stroke={selectedMetric === 'impressions' ? 'var(--primary)' : selectedMetric === 'clicks' ? 'var(--accent)' : 'var(--secondary)'} 
+                    strokeWidth="2.5" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                    className="chart-line-entrance"
+                  />
+                )}
 
-              {/* Interactive Point Circles & Labels */}
-              {points.map((p, idx) => (
-                <g key={idx} className="chart-point-group">
-                  {/* Outer glowing halo */}
-                  <circle cx={p.x} cy={p.y} r="5" fill="rgba(255,255,255,0.15)" stroke="none" />
-                  {/* Core pointer */}
-                  <circle cx={p.x} cy={p.y} r="3" fill={selectedMetric === 'impressions' ? 'var(--primary)' : selectedMetric === 'clicks' ? 'var(--accent)' : 'var(--secondary)'} />
-                  
-                  {/* Tooltip hovering tag */}
-                  <g className="chart-tooltip-text">
-                    <rect x={p.x - 24} y={p.y - 26} width="48" height="18" rx="4" fill="rgba(0,0,0,0.85)" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
-                    <text x={p.x} y={p.y - 14} fill="#ffffff" fontSize="9" fontWeight="600" textAnchor="middle">{p.val}</text>
+                {/* Interactive Point Circles & Labels */}
+                {points.map((p, idx) => (
+                  <g key={idx} className="chart-point-group">
+                    {/* Outer glowing halo */}
+                    <circle cx={p.x} cy={p.y} r="5" fill="rgba(255,255,255,0.15)" stroke="none" />
+                    {/* Core pointer */}
+                    <circle cx={p.x} cy={p.y} r="3" fill={selectedMetric === 'impressions' ? 'var(--primary)' : selectedMetric === 'clicks' ? 'var(--accent)' : 'var(--secondary)'} />
+                    
+                    {/* Tooltip hovering tag */}
+                    <g className="chart-tooltip-text">
+                      <rect x={p.x - 24} y={p.y - 26} width="48" height="18" rx="4" fill="rgba(0,0,0,0.85)" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
+                      <text x={p.x} y={p.y - 14} fill="#ffffff" fontSize="9" fontWeight="600" textAnchor="middle">{p.val}</text>
+                    </g>
+
+                    {/* X Axis Dates labels */}
+                    <text x={p.x} y={svgHeight - paddingY + 16} fill="var(--text-muted)" fontSize="9" textAnchor="middle">{p.date}</text>
                   </g>
-
-                  {/* X Axis Dates labels */}
-                  <text x={p.x} y={svgHeight - paddingY + 16} fill="var(--text-muted)" fontSize="9" textAnchor="middle">{p.date}</text>
-                </g>
-              ))}
-            </svg>
+                ))}
+              </svg>
+            )}
           </div>
         </div>
 
@@ -329,13 +399,14 @@ const Analytics = () => {
           </div>
 
           <div style={platformsBreakdownContainer}>
-            {Object.keys(data.platform_breakdown).length === 0 ? (
+            {!data || !data.platform_breakdown || Object.keys(data.platform_breakdown).length === 0 ? (
               <div style={emptyPlatformsTextStyle}>No connected account logs available to compare.</div>
             ) : (
               Object.entries(data.platform_breakdown).map(([platform, stats]) => {
-                // Find total engagement percentage to draw bar length
-                const maxEng = Math.max(...Object.values(data.platform_breakdown).map(s => s.engagements)) || 1;
-                const barWidth = (stats.engagements / maxEng) * 100;
+                const maxEng = Math.max(...Object.values(data.platform_breakdown).map(s => typeof s.engagements === 'number' ? s.engagements : 0)) || 1;
+                const engagements = typeof stats.engagements === 'number' ? stats.engagements : 0;
+                const barWidth = (engagements / maxEng) * 100;
+                const isUnavailable = stats.impressions === "Not available for Facebook";
                 
                 return (
                   <div key={platform} style={platformBarRowStyle}>
@@ -345,13 +416,23 @@ const Analytics = () => {
                     </div>
                     
                     <div style={platformProgressTrackBg}>
-                      <div style={platformProgressFillBar(barWidth, platform)} className="platform-fill-entrance"></div>
+                      {isUnavailable ? (
+                        <div style={{ color: 'var(--text-muted)', fontSize: '11px', paddingLeft: '8px', lineHeight: '10px' }}>Not available for Facebook</div>
+                      ) : (
+                        <div style={platformProgressFillBar(barWidth, platform)} className="platform-fill-entrance"></div>
+                      )}
                     </div>
                     
                     <div style={platformMetricsRowStyle}>
-                      <span>{stats.impressions.toLocaleString()} views</span>
-                      <span>•</span>
-                      <span>{stats.engagements.toLocaleString()} clicks/likes</span>
+                      {isUnavailable ? (
+                        <span>Not available for Facebook</span>
+                      ) : (
+                        <>
+                          <span>{typeof stats.impressions === 'number' ? stats.impressions.toLocaleString() : stats.impressions} views</span>
+                          <span>•</span>
+                          <span>{typeof stats.engagements === 'number' ? stats.engagements.toLocaleString() : stats.engagements} clicks/likes</span>
+                        </>
+                      )}
                     </div>
                   </div>
                 );

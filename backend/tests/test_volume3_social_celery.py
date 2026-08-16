@@ -100,6 +100,8 @@ def test_volume3_publishing_engine_and_trace_logging(db_session):
         db_session.commit()
         db_session.refresh(team)
 
+    from app.database.repositories import SocialAccountRepository
+
     account = TokenManager.store_oauth_account(
         db=db_session,
         user_id=user.id,
@@ -110,12 +112,25 @@ def test_volume3_publishing_engine_and_trace_logging(db_session):
         expires_in_seconds=3600
     )
 
+    social_acc = SocialAccountRepository.connect_account(
+        db=db_session,
+        team_id=team.id,
+        user_id=user.id,
+        platform="twitter",
+        platform_account_id="tw_998877",
+        name="Test Twitter",
+        avatar=None,
+        token="tw_access_token",
+        refresh="tw_refresh_token",
+        expires_at=datetime.utcnow() + timedelta(seconds=3600)
+    )
+
     # Create post with valid schema fields
     post = Post(
         team_id=team.id,
         user_id=user.id,
         content_text="Production test post for Volume 3 social drivers & Celery engine.",
-        platform_targets=f'["{account.id}"]',
+        platform_targets=f'["{social_acc.id}"]',
         status="scheduled",
         scheduled_at=datetime.utcnow() - timedelta(minutes=1)
     )
@@ -125,7 +140,7 @@ def test_volume3_publishing_engine_and_trace_logging(db_session):
 
     # Test PublishingEngine dispatch (handles live platform response or mock failure)
     try:
-        res = PublishingEngine.publish_post_to_channel(db_session, post.id, account.id)
+        res = PublishingEngine.publish_post_to_channel(db_session, post.id, social_acc.id)
         assert res is not None
         assert res["status"] == "published"
         assert post.status == "published"

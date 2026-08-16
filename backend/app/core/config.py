@@ -34,13 +34,25 @@ class Settings(BaseSettings):
     # CORS Configuration
     BACKEND_CORS_ORIGINS: Union[List[str], str] = ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"]
 
+    # Application URLs used for OAuth redirects
+    BACKEND_BASE_URL: str = Field(default="http://localhost:8000")
+    FRONTEND_BASE_URL: str = Field(default="http://localhost:5173")
+
+    # LinkedIn REST API version header (YYYYMM)
+    LINKEDIN_API_VERSION: str = Field(default="202601")
+
     # Official Social API OAuth Credentials (Loaded from .env)
     META_APP_ID: Optional[str] = None
     META_APP_SECRET: Optional[str] = None
+    META_FACEBOOK_LOGIN_CONFIG_ID: Optional[str] = None
     FACEBOOK_CLIENT_ID: Optional[str] = None
     FACEBOOK_CLIENT_SECRET: Optional[str] = None
+    FACEBOOK_REDIRECT_URI: Optional[str] = None
     INSTAGRAM_CLIENT_ID: Optional[str] = None
     INSTAGRAM_CLIENT_SECRET: Optional[str] = None
+    INSTAGRAM_APP_ID: Optional[str] = None
+    INSTAGRAM_APP_SECRET: Optional[str] = None
+    INSTAGRAM_REDIRECT_URI: Optional[str] = None
     LINKEDIN_CLIENT_ID: Optional[str] = None
     LINKEDIN_CLIENT_SECRET: Optional[str] = None
     X_CLIENT_ID: Optional[str] = None

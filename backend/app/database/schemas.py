@@ -132,6 +132,7 @@ class SocialAccountOut(BaseModel):
     created_at: datetime
     status: str = "connected"
     rate_limit_remaining: int = 100
+    connection_type: Optional[str] = None
 
     class Config:
         from_attributes = True

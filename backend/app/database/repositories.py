@@ -195,7 +195,7 @@ class SocialAccountRepository:
     ) -> SocialAccount:
         # Encrypt token values for security
         enc_token = encrypt_token(token)
-        enc_refresh = encrypt_token(refresh)
+        enc_refresh = encrypt_token(refresh) if refresh else None
 
         # Check if already connected
         existing = SocialAccountRepository.get_by_platform_and_account_id(

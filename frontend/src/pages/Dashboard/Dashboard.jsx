@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { 
   FiLayout, FiUser, FiUsers, FiCalendar, 
@@ -15,12 +16,78 @@ import Analytics from '../Analytics/Analytics';
 import Settings from '../Settings/Settings';
 import Reports from '../Reports/Reports';
 import Clients from '../Clients/Clients';
+import CreatePost from '../CreatePost/CreatePost';
+
+const ROLE_NAV_ITEMS = {
+  'Administrator': [
+    { tab: 'overview', label: 'Dashboard', icon: FiLayout, path: '/dashboard' },
+    { tab: 'team', label: 'Workspace Users', icon: FiUsers, path: '/team' },
+    { tab: 'social', label: 'Social Channels', icon: FiLink, path: '/social-accounts' },
+    { tab: 'campaigns', label: 'Campaigns', icon: FiFolder, path: '/campaigns' },
+    { tab: 'scheduler', label: 'Scheduler', icon: FiEdit3, subTab: 'compose', path: '/scheduler' },
+    { tab: 'analytics', label: 'Analytics', icon: FiBarChart2, path: '/analytics' },
+    { tab: 'reports', label: 'Reports', icon: FiFileText, path: '/reports' },
+    { tab: 'audit-logs', label: 'Audit & Activity Logs', icon: FiActivity, path: '/dashboard' },
+    { tab: 'notifications', label: 'Notifications', icon: FiBell, badge: true, path: '/dashboard' },
+    { tab: 'profile', label: 'Profile', icon: FiUser, path: '/profile' },
+    { tab: 'settings', label: 'Settings', icon: FiSettings, path: '/settings' }
+  ],
+  'Business User': [
+    { tab: 'overview', label: 'Dashboard', icon: FiLayout, path: '/dashboard' },
+    { tab: 'social', label: 'Social Accounts', icon: FiLink, path: '/social-accounts' },
+    { tab: 'create-post', label: 'Content', icon: FiEdit3, path: '/create-post' },
+    { tab: 'campaigns', label: 'Campaigns', icon: FiFolder, path: '/campaigns' },
+    { tab: 'scheduler', label: 'Scheduler', icon: FiCalendar, subTab: 'compose', path: '/scheduler' },
+    { tab: 'analytics', label: 'Analytics', icon: FiBarChart2, path: '/analytics' },
+    { tab: 'team', label: 'Team/Workspace', icon: FiUsers, path: '/team' },
+    { tab: 'notifications', label: 'Notifications', icon: FiBell, badge: true, path: '/dashboard' },
+    { tab: 'settings', label: 'Settings', icon: FiSettings, path: '/settings' }
+  ],
+  'Team Manager': [
+    { tab: 'overview', label: 'Dashboard', icon: FiLayout, path: '/dashboard' },
+    { tab: 'team', label: 'Team', icon: FiUsers, path: '/team' },
+    { tab: 'social', label: 'Social Accounts', icon: FiLink, path: '/social-accounts' },
+    { tab: 'create-post', label: 'Content', icon: FiEdit3, path: '/create-post' },
+    { tab: 'campaigns', label: 'Campaigns', icon: FiFolder, path: '/campaigns' },
+    { tab: 'scheduler', label: 'Scheduler', icon: FiCalendar, subTab: 'compose', path: '/scheduler' },
+    { tab: 'analytics', label: 'Analytics', icon: FiBarChart2, path: '/analytics' },
+    { tab: 'notifications', label: 'Notifications', icon: FiBell, badge: true, path: '/dashboard' },
+    { tab: 'settings', label: 'Settings', icon: FiSettings, path: '/settings' }
+  ],
+  'Content Creator': [
+    { tab: 'overview', label: 'Dashboard', icon: FiLayout, path: '/dashboard' },
+    { tab: 'create-post', label: 'Content', icon: FiEdit3, path: '/create-post' },
+    { tab: 'campaigns', label: 'Campaigns', icon: FiFolder, path: '/campaigns' },
+    { tab: 'scheduler', label: 'Scheduler', icon: FiCalendar, subTab: 'compose', path: '/scheduler' },
+    { tab: 'social', label: 'Social Accounts', icon: FiLink, conditionalBackend: 'social', path: '/social-accounts' },
+    { tab: 'analytics', label: 'Analytics', icon: FiBarChart2, conditionalBackend: 'analytics', path: '/analytics' },
+    { tab: 'notifications', label: 'Notifications', icon: FiBell, badge: true, path: '/dashboard' },
+    { tab: 'profile', label: 'Profile', icon: FiUser, path: '/profile' },
+    { tab: 'settings', label: 'Settings', icon: FiSettings, path: '/settings' }
+  ]
+};
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('overview');
   const [schedulerSubTab, setSchedulerSubTab] = useState('compose');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const { user, logout } = useAuth();
+  const { user, logout, hasPermission } = useAuth();
+
+  useEffect(() => {
+    const path = location.pathname;
+    if (path === '/social-accounts') setActiveTab('social');
+    else if (path === '/scheduler') setActiveTab('scheduler');
+    else if (path === '/create-post') setActiveTab('create-post');
+    else if (path === '/campaigns') setActiveTab('campaigns');
+    else if (path === '/analytics') setActiveTab('analytics');
+    else if (path === '/reports') setActiveTab('reports');
+    else if (path === '/team') setActiveTab('team');
+    else if (path === '/profile') setActiveTab('profile');
+    else if (path === '/settings') setActiveTab('settings');
+    else if (path === '/dashboard') setActiveTab('overview');
+  }, [location.pathname]);
 
   // Notifications drawer state
   const [notifications, setNotifications] = useState([]);
@@ -448,7 +515,7 @@ const Dashboard = () => {
         <div style={shortcutSectionStyle}>
           <h4 style={shortcutTitleStyle}>Content Creator Workflow Tools</h4>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginTop: '12px' }}>
-            <button className="btn-primary" onClick={() => { setActiveTab('scheduler'); setSchedulerSubTab('compose'); }} style={{ height: '40px', fontSize: '0.82rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+            <button className="btn-primary" onClick={() => { setActiveTab('create-post'); setShowNotifDrawer(false); }} style={{ height: '40px', fontSize: '0.82rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
               ✍️ Create New Post
             </button>
             <button className="btn-secondary" onClick={() => { setActiveTab('scheduler'); setSchedulerSubTab('compose'); }} style={{ height: '40px', fontSize: '0.82rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
@@ -475,7 +542,28 @@ const Dashboard = () => {
     );
   };
 
+  const userRoleNormalized = (() => {
+    const rName = (user?.role_name || user?.role?.name || '').toLowerCase();
+    if (rName.includes('admin') || rName === 'administrator') return 'Administrator';
+    if (rName.includes('manager') || rName.includes('marketing')) return 'Team Manager';
+    if (rName.includes('creator') || rName.includes('content')) return 'Content Creator';
+    if (rName.includes('business')) return 'Business User';
+    return 'Content Creator'; // fallback
+  })();
+
   const renderContent = () => {
+    const allowedItems = ROLE_NAV_ITEMS[userRoleNormalized] || ROLE_NAV_ITEMS['Content Creator'];
+    const isAllowed = allowedItems.some(item => {
+      if (item.conditionalBackend === 'analytics' && !hasPermission('analytics:view')) return false;
+      if (item.conditionalBackend === 'social' && !hasPermission('post:create')) return false;
+      return item.tab === activeTab;
+    });
+
+    if (!isAllowed && activeTab !== 'overview' && activeTab !== 'profile' && activeTab !== 'settings' && activeTab !== 'notifications') {
+      setActiveTab('overview');
+      return renderRoleDashboard();
+    }
+
     switch (activeTab) {
       case 'profile':
         return <Profile />;
@@ -487,6 +575,8 @@ const Dashboard = () => {
         return (user?.role_name || user?.role?.name) === 'Marketing Team' ? <Clients /> : <SocialAccounts />;
       case 'scheduler':
         return <Scheduler initialTab={schedulerSubTab} />;
+      case 'create-post':
+        return <CreatePost />;
       case 'campaigns':
         return <Campaigns />;
       case 'analytics':
@@ -637,312 +727,56 @@ const Dashboard = () => {
         </div>
 
         <div style={navGroupStyle}>
-          {(user?.role_name || user?.role?.name) === 'Content Creator' ? (
-            <>
-              <button 
-                style={activeTab === 'overview' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('overview'); setShowNotifDrawer(false); }}
-              >
-                <FiLayout size={18} />
-                {sidebarOpen && <span>Dashboard</span>}
-              </button>
-              <button 
-                style={activeTab === 'scheduler' && schedulerSubTab === 'queue' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('scheduler'); setSchedulerSubTab('queue'); setShowNotifDrawer(false); }}
-              >
-                <FiLayers size={18} />
-                {sidebarOpen && <span>My Posts</span>}
-              </button>
-              <button 
-                style={activeTab === 'scheduler' && schedulerSubTab === 'compose' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('scheduler'); setSchedulerSubTab('compose'); setShowNotifDrawer(false); }}
-              >
-                <FiEdit3 size={18} />
-                {sidebarOpen && <span>Content Scheduling</span>}
-              </button>
-              <button 
-                style={activeTab === 'campaigns' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('campaigns'); setShowNotifDrawer(false); }}
-              >
-                <FiFolder size={18} />
-                {sidebarOpen && <span>Campaigns</span>}
-              </button>
-              <button 
-                style={activeTab === 'scheduler' && schedulerSubTab === 'calendar' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('scheduler'); setSchedulerSubTab('calendar'); setShowNotifDrawer(false); }}
-              >
-                <FiCalendar size={18} />
-                {sidebarOpen && <span>My Calendar</span>}
-              </button>
-              <button 
-                style={activeTab === 'notifications' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('notifications'); setShowNotifDrawer(false); }}
-              >
-                <FiBell size={18} />
-                {sidebarOpen && (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    Notifications 
-                    {safeNotifs.filter(n => !n.is_read).length > 0 && (
-                      <span style={{ background: 'var(--error)', color: '#fff', fontSize: '0.66rem', padding: '1px 5px', borderRadius: '8px', fontWeight: 'bold' }}>
-                        {safeNotifs.filter(n => !n.is_read).length}
+          {(() => {
+            const navItems = ROLE_NAV_ITEMS[userRoleNormalized] || ROLE_NAV_ITEMS['Content Creator'];
+            const filteredNavItems = navItems.filter(item => {
+              if (item.conditionalBackend === 'analytics') {
+                return hasPermission('analytics:view');
+              }
+              if (item.conditionalBackend === 'social') {
+                return hasPermission('post:create');
+              }
+              return true;
+            });
+
+            return filteredNavItems.map((item, idx) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.tab && (item.subTab ? schedulerSubTab === item.subTab : true);
+
+              return (
+                <button 
+                  key={idx}
+                  style={isActive ? activeNavItemStyle : navItemStyle} 
+                  onClick={() => { 
+                    if (item.path) {
+                      navigate(item.path);
+                    }
+                    setActiveTab(item.tab); 
+                    if (item.subTab) {
+                      setSchedulerSubTab(item.subTab);
+                    }
+                    setShowNotifDrawer(false); 
+                  }}
+                >
+                  <Icon size={18} />
+                  {sidebarOpen && (
+                    item.badge ? (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {item.label} 
+                        {safeNotifs.filter(n => !n.is_read).length > 0 && (
+                          <span style={{ background: 'var(--error)', color: '#fff', fontSize: '0.66rem', padding: '1px 5px', borderRadius: '8px', fontWeight: 'bold' }}>
+                            {safeNotifs.filter(n => !n.is_read).length}
+                          </span>
+                        )}
                       </span>
-                    )}
-                  </span>
-                )}
-              </button>
-              <button 
-                style={activeTab === 'profile' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('profile'); setShowNotifDrawer(false); }}
-              >
-                <FiUser size={18} />
-                {sidebarOpen && <span>Profile</span>}
-              </button>
-              <button 
-                style={activeTab === 'settings' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('settings'); setShowNotifDrawer(false); }}
-              >
-                <FiSettings size={18} />
-                {sidebarOpen && <span>Settings</span>}
-              </button>
-            </>
-          ) : (user?.role_name || user?.role?.name) === 'Marketing Team' || (user?.role_name || user?.role?.name) === 'Marketing Specialist' ? (
-            <>
-              <button 
-                style={activeTab === 'overview' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('overview'); setShowNotifDrawer(false); }}
-              >
-                <FiLayout size={18} />
-                {sidebarOpen && <span>Dashboard</span>}
-              </button>
-              <button 
-                style={activeTab === 'social' || activeTab === 'team' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('social'); setShowNotifDrawer(false); }}
-              >
-                <FiUsers size={18} />
-                {sidebarOpen && <span>Clients</span>}
-              </button>
-              <button 
-                style={activeTab === 'campaigns' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('campaigns'); setShowNotifDrawer(false); }}
-              >
-                <FiFolder size={18} />
-                {sidebarOpen && <span>Campaign Management</span>}
-              </button>
-              <button 
-                style={activeTab === 'scheduler' && schedulerSubTab === 'compose' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('scheduler'); setSchedulerSubTab('compose'); setShowNotifDrawer(false); }}
-              >
-                <FiEdit3 size={18} />
-                {sidebarOpen && <span>Content Scheduling</span>}
-              </button>
-              <button 
-                style={activeTab === 'scheduler' && schedulerSubTab === 'calendar' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('scheduler'); setSchedulerSubTab('calendar'); setShowNotifDrawer(false); }}
-              >
-                <FiCalendar size={18} />
-                {sidebarOpen && <span>Publishing Calendar</span>}
-              </button>
-              <button 
-                style={activeTab === 'analytics' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('analytics'); setShowNotifDrawer(false); }}
-              >
-                <FiBarChart2 size={18} />
-                {sidebarOpen && <span>Analytics</span>}
-              </button>
-              <button 
-                style={activeTab === 'reports' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('reports'); setShowNotifDrawer(false); }}
-              >
-                <FiFileText size={18} />
-                {sidebarOpen && <span>Reports</span>}
-              </button>
-              <button 
-                style={activeTab === 'notifications' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('notifications'); setShowNotifDrawer(false); }}
-              >
-                <FiBell size={18} />
-                {sidebarOpen && (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    Notifications 
-                    {safeNotifs.filter(n => !n.is_read).length > 0 && (
-                      <span style={{ background: 'var(--error)', color: '#fff', fontSize: '0.66rem', padding: '1px 5px', borderRadius: '8px', fontWeight: 'bold' }}>
-                        {safeNotifs.filter(n => !n.is_read).length}
-                      </span>
-                    )}
-                  </span>
-                )}
-              </button>
-              <button 
-                style={activeTab === 'profile' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('profile'); setShowNotifDrawer(false); }}
-              >
-                <FiUser size={18} />
-                {sidebarOpen && <span>Profile</span>}
-              </button>
-              <button 
-                style={activeTab === 'settings' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('settings'); setShowNotifDrawer(false); }}
-              >
-                <FiSettings size={18} />
-                {sidebarOpen && <span>Settings</span>}
-              </button>
-              <button 
-                style={{ ...navItemStyle, color: 'var(--error)', marginTop: '8px' }} 
-                onClick={logout}
-              >
-                <FiLogOut size={18} />
-                {sidebarOpen && <span>Logout</span>}
-              </button>
-            </>
-          ) : (user?.role_name || user?.role?.name) === 'Administrator' ? (
-            <>
-              <button 
-                style={activeTab === 'overview' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('overview'); setShowNotifDrawer(false); }}
-              >
-                <FiLayout size={18} />
-                {sidebarOpen && <span>Dashboard</span>}
-              </button>
-              <button 
-                style={activeTab === 'team' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('team'); setShowNotifDrawer(false); }}
-              >
-                <FiUsers size={18} />
-                {sidebarOpen && <span>Workspace Users</span>}
-              </button>
-              <button 
-                style={activeTab === 'social' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('social'); setShowNotifDrawer(false); }}
-              >
-                <FiLink size={18} />
-                {sidebarOpen && <span>Social Channels</span>}
-              </button>
-              <button 
-                style={activeTab === 'campaigns' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('campaigns'); setShowNotifDrawer(false); }}
-              >
-                <FiFolder size={18} />
-                {sidebarOpen && <span>Campaigns</span>}
-              </button>
-              <button 
-                style={activeTab === 'scheduler' && schedulerSubTab === 'compose' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('scheduler'); setSchedulerSubTab('compose'); setShowNotifDrawer(false); }}
-              >
-                <FiEdit3 size={18} />
-                {sidebarOpen && <span>Scheduler</span>}
-              </button>
-              <button 
-                style={activeTab === 'analytics' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('analytics'); setShowNotifDrawer(false); }}
-              >
-                <FiBarChart2 size={18} />
-                {sidebarOpen && <span>Analytics</span>}
-              </button>
-              <button 
-                style={activeTab === 'reports' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('reports'); setShowNotifDrawer(false); }}
-              >
-                <FiFileText size={18} />
-                {sidebarOpen && <span>Reports</span>}
-              </button>
-              <button 
-                style={activeTab === 'audit-logs' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('audit-logs'); setShowNotifDrawer(false); }}
-              >
-                <FiActivity size={18} />
-                {sidebarOpen && <span>Audit & Activity Logs</span>}
-              </button>
-              <button 
-                style={activeTab === 'notifications' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('notifications'); setShowNotifDrawer(false); }}
-              >
-                <FiBell size={18} />
-                {sidebarOpen && (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    Notifications 
-                    {safeNotifs.filter(n => !n.is_read).length > 0 && (
-                      <span style={{ background: 'var(--error)', color: '#fff', fontSize: '0.66rem', padding: '1px 5px', borderRadius: '8px', fontWeight: 'bold' }}>
-                        {safeNotifs.filter(n => !n.is_read).length}
-                      </span>
-                    )}
-                  </span>
-                )}
-              </button>
-              <button 
-                style={activeTab === 'profile' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('profile'); setShowNotifDrawer(false); }}
-              >
-                <FiUser size={18} />
-                {sidebarOpen && <span>Profile</span>}
-              </button>
-              <button 
-                style={activeTab === 'settings' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('settings'); setShowNotifDrawer(false); }}
-              >
-                <FiSettings size={18} />
-                {sidebarOpen && <span>Settings</span>}
-              </button>
-            </>
-          ) : (
-            <>
-              <button 
-                style={activeTab === 'overview' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('overview'); setShowNotifDrawer(false); }}
-              >
-                <FiLayout size={18} />
-                {sidebarOpen && <span>Overview</span>}
-              </button>
-              <button 
-                style={activeTab === 'profile' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('profile'); setShowNotifDrawer(false); }}
-              >
-                <FiUser size={18} />
-                {sidebarOpen && <span>My Profile</span>}
-              </button>
-              <button 
-                style={activeTab === 'team' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('team'); setShowNotifDrawer(false); }}
-              >
-                <FiUsers size={18} />
-                {sidebarOpen && <span>Team Workspace</span>}
-              </button>
-              <button 
-                style={activeTab === 'social' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('social'); setShowNotifDrawer(false); }}
-              >
-                <FiLink size={18} />
-                {sidebarOpen && <span>Social Channels</span>}
-              </button>
-              <button 
-                style={activeTab === 'scheduler' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('scheduler'); setSchedulerSubTab('compose'); setShowNotifDrawer(false); }}
-              >
-                <FiCalendar size={18} />
-                {sidebarOpen && <span>Scheduler</span>}
-              </button>
-              <button 
-                style={activeTab === 'campaigns' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('campaigns'); setShowNotifDrawer(false); }}
-              >
-                <FiFolder size={18} />
-                {sidebarOpen && <span>Campaigns</span>}
-              </button>
-              <button 
-                style={activeTab === 'analytics' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('analytics'); setShowNotifDrawer(false); }}
-              >
-                <FiBarChart2 size={18} />
-                {sidebarOpen && <span>Analytics</span>}
-              </button>
-              <button 
-                style={activeTab === 'settings' ? activeNavItemStyle : navItemStyle} 
-                onClick={() => { setActiveTab('settings'); setShowNotifDrawer(false); }}
-              >
-                <FiSettings size={18} />
-                {sidebarOpen && <span>Settings</span>}
-              </button>
-            </>
-          )}
+                    ) : (
+                      <span>{item.label}</span>
+                    )
+                  )}
+                </button>
+              );
+            });
+          })()}
         </div>
 
         <div style={sidebarFooterStyle}>
@@ -1088,7 +922,8 @@ const navGroupStyle = {
 
 const navItemStyle = {
   background: 'none',
-  border: 'none',
+  borderStyle: 'solid',
+  borderWidth: '0px',
   borderRadius: '10px',
   color: 'var(--text-secondary)',
   padding: '12px 16px',
@@ -1106,7 +941,8 @@ const activeNavItemStyle = {
   ...navItemStyle,
   background: 'rgba(99, 102, 241, 0.1)',
   color: 'var(--text-primary)',
-  borderLeft: '3px solid var(--primary)',
+  borderLeftWidth: '3px',
+  borderLeftColor: 'var(--primary)',
   borderTopLeftRadius: '0px',
   borderBottomLeftRadius: '0px',
 };

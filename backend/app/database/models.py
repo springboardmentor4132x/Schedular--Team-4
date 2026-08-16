@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, DateTime, ForeignKey, Table, Boolean, UniqueConstraint, Float, Integer
+from sqlalchemy import Column, String, DateTime, ForeignKey, Table, Boolean, UniqueConstraint, Float, Integer, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.database.session import Base
@@ -88,8 +88,8 @@ class SocialAccount(Base):
     platform_account_id = Column(String(100), nullable=False)  # external id
     account_name = Column(String(150), nullable=False)  # handle or name
     avatar_url = Column(String(255), nullable=True)
-    access_token = Column(String(500), nullable=False)
-    refresh_token = Column(String(500), nullable=True)
+    access_token = Column(Text, nullable=False)
+    refresh_token = Column(Text, nullable=True)
     expires_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -49,19 +49,31 @@ def publish_scheduled_post_task(self, post_id: str, oauth_account_id: str, prior
 @shared_task
 def scan_and_dispatch_due_posts_task():
     """Celery Beat scheduled task scanning database every minute for due posts."""
+    import json
     db = SessionLocal()
     try:
         due_posts = PostScheduler.get_due_posts(db)
         dispatched_count = 0
         for post in due_posts:
-            PostScheduler.mark_post_processing(db, post.id)
-            social_channel_id = getattr(post, "social_account_id", None) or getattr(post, "oauth_account_id", None)
-            if social_channel_id:
-                publish_scheduled_post_task.apply_async(
-                    args=[post.id, social_channel_id],
-                    priority=5  # Normal priority
-                )
-                dispatched_count += 1
+            # Mark post status as publishing to prevent other processes picking it up
+            post.status = "publishing"
+            db.commit()
+
+            try:
+                targets = json.loads(post.platform_targets) if isinstance(post.platform_targets, str) else post.platform_targets
+            except Exception:
+                targets = [post.platform_targets] if post.platform_targets else []
+
+            if not isinstance(targets, list):
+                targets = [targets] if targets else []
+
+            for acc_id in targets:
+                if acc_id:
+                    publish_scheduled_post_task.apply_async(
+                        args=[post.id, acc_id],
+                        priority=5  # Normal priority
+                    )
+                    dispatched_count += 1
         return {"scanned": len(due_posts), "dispatched": dispatched_count}
     finally:
         db.close()

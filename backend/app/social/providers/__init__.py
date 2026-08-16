@@ -25,22 +25,46 @@ def get_social_provider(provider_name: str) -> BaseSocialProvider:
     
     cls, client_id, client_secret = PROVIDERS_MAP[clean_name]
 
-    if clean_name in ("facebook", "instagram"):
+    if clean_name == "facebook":
         client_id = (
-            settings.META_APP_ID or
             settings.FACEBOOK_CLIENT_ID or
-            settings.INSTAGRAM_CLIENT_ID or
-            os.getenv("META_APP_ID") or
+            settings.META_APP_ID or
             os.getenv("FACEBOOK_CLIENT_ID") or
-            os.getenv("INSTAGRAM_CLIENT_ID")
+            os.getenv("META_APP_ID")
         )
         client_secret = (
-            settings.META_APP_SECRET or
             settings.FACEBOOK_CLIENT_SECRET or
-            settings.INSTAGRAM_CLIENT_SECRET or
-            os.getenv("META_APP_SECRET") or
+            settings.META_APP_SECRET or
             os.getenv("FACEBOOK_CLIENT_SECRET") or
-            os.getenv("INSTAGRAM_CLIENT_SECRET")
+            os.getenv("META_APP_SECRET")
+        )
+        config_id = (
+            settings.META_FACEBOOK_LOGIN_CONFIG_ID or
+            os.getenv("META_FACEBOOK_LOGIN_CONFIG_ID")
+        )
+        if client_id and isinstance(client_id, str):
+            client_id = client_id.strip()
+        if client_secret and isinstance(client_secret, str):
+            client_secret = client_secret.strip()
+        if config_id and isinstance(config_id, str):
+            config_id = config_id.strip()
+        return cls(client_id=client_id or "", client_secret=client_secret or "", config_id=config_id)
+    elif clean_name == "instagram":
+        client_id = (
+            settings.INSTAGRAM_CLIENT_ID or
+            settings.INSTAGRAM_APP_ID or
+            os.getenv("INSTAGRAM_CLIENT_ID") or
+            os.getenv("INSTAGRAM_APP_ID") or
+            settings.META_APP_ID or
+            os.getenv("META_APP_ID")
+        )
+        client_secret = (
+            settings.INSTAGRAM_CLIENT_SECRET or
+            settings.INSTAGRAM_APP_SECRET or
+            os.getenv("INSTAGRAM_CLIENT_SECRET") or
+            os.getenv("INSTAGRAM_APP_SECRET") or
+            settings.META_APP_SECRET or
+            os.getenv("META_APP_SECRET")
         )
     elif clean_name in ("youtube", "google"):
         client_id = settings.GOOGLE_CLIENT_ID or settings.YOUTUBE_CLIENT_ID or os.getenv("GOOGLE_CLIENT_ID") or os.getenv("YOUTUBE_CLIENT_ID")
@@ -51,5 +75,10 @@ def get_social_provider(provider_name: str) -> BaseSocialProvider:
     elif clean_name in ("twitter", "x"):
         client_id = settings.X_CLIENT_ID or settings.TWITTER_CLIENT_ID or os.getenv("X_API_KEY") or os.getenv("TWITTER_CLIENT_ID")
         client_secret = settings.X_CLIENT_SECRET or settings.TWITTER_CLIENT_SECRET or os.getenv("X_API_SECRET") or os.getenv("TWITTER_CLIENT_SECRET")
+
+    if client_id and isinstance(client_id, str):
+        client_id = client_id.strip()
+    if client_secret and isinstance(client_secret, str):
+        client_secret = client_secret.strip()
 
     return cls(client_id=client_id or "", client_secret=client_secret or "")

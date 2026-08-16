@@ -3,7 +3,7 @@ import axios from 'axios';
 // Configure standard Axios client
 const api = axios.create({
   baseURL: 'http://localhost:8000/api/v1',
-  withCredentials: true, // Crucial for sending/receiving HttpOnly cookies
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },

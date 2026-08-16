@@ -100,8 +100,33 @@ export const AuthProvider = ({ children }) => {
 
   const hasPermission = (permission) => {
     if (!user) return false;
-    if (user.role.name === 'Administrator') return true;
-    return user.role.permissions.some(p => p.name === permission);
+    
+    // Normalize role name
+    const roleName = user.role_name || user.role?.name || '';
+    if (roleName === 'Administrator') return true;
+
+    // Check if permission is a string
+    const permString = typeof permission === 'string' ? permission : (permission?.name || '');
+    if (!permString) return false;
+
+    // Fallback to static mapping if permissions array is not present on user object
+    const permissions = user.role?.permissions || [];
+    if (permissions.length > 0) {
+      return permissions.some(p => p.name === permString);
+    }
+
+    // Static role-to-permissions mapping based on role_name
+    const ROLE_PERMISSIONS = {
+      'Administrator': ['team:create', 'team:invite', 'team:remove', 'post:create', 'post:publish', 'post:delete', 'analytics:view', 'settings:edit'],
+      'Business User': ['team:invite', 'post:create', 'post:publish', 'post:delete', 'analytics:view', 'settings:edit'],
+      'Team Manager': ['team:invite', 'post:create', 'post:publish', 'post:delete', 'analytics:view', 'settings:edit'],
+      'Marketing Team': ['team:invite', 'post:create', 'post:publish', 'post:delete', 'analytics:view', 'settings:edit'],
+      'Marketing Specialist': ['team:invite', 'post:create', 'post:publish', 'post:delete', 'analytics:view', 'settings:edit'],
+      'Content Creator': ['post:create', 'analytics:view']
+    };
+
+    const allowedPermissions = ROLE_PERMISSIONS[roleName] || [];
+    return allowedPermissions.includes(permString);
   };
 
   return (

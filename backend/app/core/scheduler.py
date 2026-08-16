@@ -15,14 +15,18 @@ async def publish_pending_posts(db: Session = None):
         
     try:
         now = datetime.utcnow()
-        # Find scheduled posts where scheduled_at <= now and status == "scheduled"
         pending_posts = db.query(Post).filter(
             Post.status == "scheduled",
             Post.scheduled_at <= now
         ).all()
 
+        if not pending_posts:
+            return
+
+        from app.publishing.publisher import RealPublisher
+        from app.social.token_manager import TokenManager, TokenRefreshError
+
         for post in pending_posts:
-            # Parse platforms
             try:
                 platform_ids = json.loads(post.platform_targets)
             except Exception:
@@ -34,12 +38,11 @@ async def publish_pending_posts(db: Session = None):
                 db.add(post)
                 continue
 
-            post_failed = False
+            expired_accounts = []
+            refresh_failed_accounts = []
             for ch_id in platform_ids:
-                # Resolve account
                 acc = db.query(SocialAccount).filter(SocialAccount.id == ch_id).first()
                 if not acc:
-                    # Log failure
                     PublishingLogRepository.create_log(db, PublishingLogCreate(
                         post_id=post.id,
                         team_id=post.team_id,
@@ -47,50 +50,97 @@ async def publish_pending_posts(db: Session = None):
                         status="failed",
                         error_message=f"Target social account {ch_id} not found."
                     ))
-                    post_failed = True
                     continue
 
-                # Check credentials health
+                try:
+                    TokenManager.get_valid_access_token(db, acc)
+                    db.refresh(acc)
+                except TokenRefreshError as token_exc:
+                    refresh_failed_accounts.append((acc, str(token_exc)))
+                    continue
+
                 is_expired = acc.expires_at is not None and acc.expires_at < datetime.utcnow()
                 if is_expired:
-                    # Log failure
+                    expired_accounts.append(acc)
+
+            if refresh_failed_accounts:
+                for acc, error_message in refresh_failed_accounts:
                     PublishingLogRepository.create_log(db, PublishingLogCreate(
                         post_id=post.id,
                         team_id=post.team_id,
                         platform=acc.platform,
                         status="failed",
-                        error_message=f"Connection expired for channel {acc.account_name}. Please re-authenticate."
+                        error_message=error_message,
                     ))
-                    # Trigger failure notification
                     NotificationRepository.create_notification(db, NotificationCreate(
                         team_id=post.team_id,
                         user_id=post.user_id,
                         title="Publishing Dispatch Failed",
-                        message=f"We were unable to publish your post to {acc.platform.capitalize()} because the connection expired.",
+                        message=(
+                            f"We were unable to publish your post to "
+                            f"{acc.platform.capitalize()} because the connection expired."
+                        ),
                         type="error"
                     ))
-                    post_failed = True
-                else:
-                    # Log success (Simulated publication)
+                post.status = "failed"
+                post.updated_at = datetime.utcnow()
+                db.add(post)
+                continue
+
+            if expired_accounts:
+                for acc in expired_accounts:
                     PublishingLogRepository.create_log(db, PublishingLogCreate(
                         post_id=post.id,
                         team_id=post.team_id,
                         platform=acc.platform,
-                        status="success",
-                        error_message=None
+                        status="failed",
+                        error_message=(
+                            f"Connection expired for channel {acc.account_name}. "
+                            "Please re-authenticate."
+                        )
                     ))
-                    # Trigger success notification
+                    NotificationRepository.create_notification(db, NotificationCreate(
+                        team_id=post.team_id,
+                        user_id=post.user_id,
+                        title="Publishing Dispatch Failed",
+                        message=(
+                            f"We were unable to publish your post to "
+                            f"{acc.platform.capitalize()} because the connection expired."
+                        ),
+                        type="error"
+                    ))
+                post.status = "failed"
+                post.updated_at = datetime.utcnow()
+                db.add(post)
+                continue
+
+            post.status = "publishing"
+            post.updated_at = datetime.utcnow()
+            db.add(post)
+            db.commit()
+            db.refresh(post)
+
+            try:
+                result = RealPublisher.publish_post_to_channels(db, post.id)
+                if result.get("status") == "published":
                     NotificationRepository.create_notification(db, NotificationCreate(
                         team_id=post.team_id,
                         user_id=post.user_id,
                         title="Post Published Successfully",
-                        message=f"Your scheduled post was successfully published to {acc.platform.capitalize()}!",
+                        message="Your scheduled post was successfully published.",
                         type="success"
                     ))
-
-            post.status = "failed" if post_failed else "published"
-            post.updated_at = datetime.utcnow()
-            db.add(post)
+            except Exception as publish_error:
+                PublishingLogRepository.create_log(db, PublishingLogCreate(
+                    post_id=post.id,
+                    team_id=post.team_id,
+                    platform="unknown",
+                    status="failed",
+                    error_message=str(publish_error)
+                ))
+                post.status = "failed"
+                post.updated_at = datetime.utcnow()
+                db.add(post)
 
         db.commit()
     except Exception as e:
@@ -102,7 +152,6 @@ async def publish_pending_posts(db: Session = None):
             db.close()
 
 async def scheduler_loop():
-    # Wait initially for startup to settle
     await asyncio.sleep(5)
     while True:
         try:

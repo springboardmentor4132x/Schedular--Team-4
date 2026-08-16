@@ -101,6 +101,47 @@ socialpilot/
    uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
    ```
 
+4. **Launch Frontend Development Workspace**:
+   ```bash
+   cd ../frontend
+   npm install
+   npm run dev
+   ```
+
+---
+
+## 🔑 Social Media API Developer Console Setup Guide
+
+To connect live social accounts, register developer applications on official platform developer portals and obtain OAuth Client ID / Secret credentials:
+
+### 1. Facebook & Instagram (Meta Graph API)
+- **Portal**: [Meta for Developers](https://developers.facebook.com/)
+- **Setup**: Create an app with type **Business**. Add **Facebook Login for Business** and **Instagram Graph API**.
+- **Permissions**: `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`, `instagram_basic`, `instagram_content_publish`.
+- **Redirect URI**: `http://localhost:8000/api/v1/social/callback/facebook` / `instagram`
+- **Keys**: `FACEBOOK_CLIENT_ID`, `FACEBOOK_CLIENT_SECRET`, `INSTAGRAM_CLIENT_ID`, `INSTAGRAM_CLIENT_SECRET`.
+
+### 2. LinkedIn (LinkedIn REST v2)
+- **Portal**: [LinkedIn Developer Portal](https://developer.linkedin.com/)
+- **Setup**: Create an app and associate it with your LinkedIn Page. Enable **Share on LinkedIn** and **Sign In with LinkedIn using OpenID Connect**.
+- **Permissions**: `openid`, `profile`, `email`, `w_member_social`.
+- **Redirect URI**: `http://localhost:8000/api/v1/social/callback/linkedin`
+- **Keys**: `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET`.
+
+### 3. X / Twitter (X API v2)
+- **Portal**: [X Developer Portal](https://developer.x.com/)
+- **Setup**: Create a Project and App. Set App Permissions to **Read and Write**. Select Type **Web App** with **OAuth 2.0 with PKCE**.
+- **Scopes**: `tweet.read`, `tweet.write`, `users.read`, `offline.access`.
+- **Redirect URI**: `http://localhost:8000/api/v1/social/callback/twitter`
+- **Keys**: `X_CLIENT_ID`, `X_CLIENT_SECRET`.
+
+### 4. YouTube (Google YouTube Data API v3)
+- **Portal**: [Google Cloud Console](https://console.cloud.google.com/)
+- **Setup**: Create a project, enable **YouTube Data API v3**, and create **OAuth 2.0 Client IDs**.
+- **Scopes**: `https://www.googleapis.com/auth/youtube.upload`, `https://www.googleapis.com/auth/youtube.readonly`.
+- **Redirect URI**: `http://localhost:8000/api/v1/social/callback/youtube`
+- **Keys**: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
+
 ---
 
 ## 🔒 Security Architecture Highlights

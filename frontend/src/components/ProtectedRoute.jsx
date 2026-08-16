@@ -2,8 +2,8 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-export const ProtectedRoute = ({ children, requiredPermission }) => {
-  const { isAuthenticated, loading, hasPermission } = useAuth();
+export const ProtectedRoute = ({ children, requiredPermission, allowedRoles }) => {
+  const { user, isAuthenticated, loading, hasPermission } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -22,6 +22,21 @@ export const ProtectedRoute = ({ children, requiredPermission }) => {
 
   if (requiredPermission && !hasPermission(requiredPermission)) {
     return <Navigate to="/dashboard" replace />;
+  }
+
+  if (allowedRoles && allowedRoles.length > 0) {
+    const userRole = (user?.role_name || user?.role?.name || '').toLowerCase();
+    const isAllowed = allowedRoles.some(r => {
+      const lowerR = r.toLowerCase();
+      if (lowerR === 'admin' && (userRole.includes('admin') || userRole === 'administrator')) return true;
+      if (lowerR === 'manager' && (userRole.includes('manager') || userRole.includes('marketing'))) return true;
+      if (lowerR === 'creator' && (userRole.includes('creator') || userRole.includes('content'))) return true;
+      if (lowerR === 'business' && userRole.includes('business')) return true;
+      return userRole === lowerR;
+    });
+    if (!isAllowed) {
+      return <Navigate to="/dashboard" replace />;
+    }
   }
 
   return children;

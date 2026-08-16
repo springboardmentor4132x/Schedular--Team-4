@@ -1,0 +1,476 @@
+/* =========================================================
+   SOCIAL ACCOUNTS PAGE (FROSTED GLASS THEME)
+   ========================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+.social-accounts-page {
+  width: 100%;
+  min-height: 100vh;
+  padding: 30px;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-primary);
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.social-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.social-page-header h1 {
+  margin: 0 0 12px;
+  font-size: 28px;
+  line-height: 1.25;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.social-page-header p {
+  margin: 5px 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.social-page-header strong {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.social-page-header a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.social-page-header a:hover {
+  text-decoration: underline;
+}
+
+.help-text {
+  margin-top: 4px !important;
+}
+
+/* =========================================================
+   CLOSE BUTTON
+   ========================================================= */
+
+.page-close {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.page-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--text-primary);
+}
+
+/* =========================================================
+   SOCIAL GRID
+   ========================================================= */
+
+.social-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(150px, 1fr));
+  gap: 16px;
+  width: 100%;
+}
+
+/* =========================================================
+   SOCIAL CARD
+   ========================================================= */
+
+.social-card {
+  min-height: 195px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 20px 14px;
+  text-align: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
+}
+
+.social-card:hover {
+  border-color: var(--primary);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 12px 40px 0 rgba(99, 102, 241, 0.15);
+  transform: translateY(-2px);
+}
+
+.social-card.connected {
+  border-color: var(--primary);
+  background: rgba(99, 102, 241, 0.05);
+}
+
+/* =========================================================
+   PLATFORM ICON
+   ========================================================= */
+
+.platform-icon {
+  width: 45px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  font-size: 29px;
+}
+
+.platform-icon svg {
+  width: 30px;
+  height: 30px;
+  stroke-width: 2;
+}
+
+/* =========================================================
+   PLATFORM NAME
+   ========================================================= */
+
+.social-card h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-primary);
+}
+
+/* =========================================================
+   DESCRIPTION
+   ========================================================= */
+
+.platform-description {
+  min-height: 21px;
+  margin: 6px 0 14px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+/* =========================================================
+   CONNECT BUTTON
+   ========================================================= */
+
+.connect-button {
+  min-width: 115px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 16px;
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.connect-button:hover {
+  background: var(--primary-glow);
+  box-shadow: 0 0 12px var(--primary-glow);
+}
+
+.connected-button {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+}
+
+.connected-button:hover {
+  background: #3b32c6;
+  border-color: #3b32c6;
+  color: #ffffff;
+}
+
+/* =========================================================
+   OPTIONS
+   ========================================================= */
+
+.platform-options {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 1px;
+}
+
+.choose-label {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 11px;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.choose-label::before,
+.choose-label::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 25%;
+  height: 1px;
+  background: var(--border-color);
+}
+
+.choose-label::before {
+  left: 0;
+}
+
+.choose-label::after {
+  right: 0;
+}
+
+.option-button {
+  width: 100%;
+  max-width: 135px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid var(--primary);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.option-button:hover {
+  background: var(--primary-glow);
+}
+
+/* =========================================================
+   MODAL OVERLAY
+   ========================================================= */
+
+.connection-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(4px);
+}
+
+/* =========================================================
+   CONNECTION MODAL
+   ========================================================= */
+
+.connection-modal {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  padding: 40px 32px 30px;
+  border-radius: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  text-align: center;
+  animation: modalAppear 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes modalAppear {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: var(--text-primary);
+}
+
+.modal-icon {
+  width: 68px;
+  height: 68px;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--border-color);
+  font-size: 38px;
+}
+
+.connection-modal h2 {
+  margin: 0 0 12px;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.connection-modal > p {
+  margin: 0 auto 24px;
+  max-width: 340px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.connection-modal > p strong {
+  color: var(--text-primary);
+}
+
+.selected-account-type {
+  margin-bottom: 20px;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.selected-account-type strong {
+  color: var(--primary);
+  text-transform: capitalize;
+}
+
+.modal-connect-button {
+  width: 100%;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-connect-button:hover {
+  background: #3b32c6;
+  box-shadow: 0 0 16px var(--primary-glow);
+}
+
+.modal-cancel-button {
+  width: 100%;
+  height: 42px;
+  margin-top: 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modal-cancel-button:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-primary);
+}
+
+/* =========================================================
+   MEDIA QUERIES (RESPONSIVENESS)
+   ========================================================= */
+
+@media (max-width: 1100px) {
+  .social-grid {
+    grid-template-columns: repeat(4, minmax(150px, 1fr));
+  }
+}
+
+@media (max-width: 850px) {
+  .social-grid {
+    grid-template-columns: repeat(3, minmax(145px, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .social-accounts-page {
+    padding: 20px 15px;
+  }
+  .social-page-header h1 {
+    font-size: 24px;
+  }
+  .social-grid {
+    grid-template-columns: repeat(2, minmax(130px, 1fr));
+    gap: 12px;
+  }
+  .social-card {
+    min-height: 180px;
+    padding: 15px 10px;
+  }
+  .connection-modal {
+    max-width: 95%;
+    padding: 30px 22px 25px;
+  }
+}
+
+@media (max-width: 380px) {
+  .social-grid {
+    grid-template-columns: 1fr;
+  }
+}
